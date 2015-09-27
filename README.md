@@ -1,7 +1,10 @@
 # SW-ESP8266_Sousvide
 Software for a sous vide controller based on ESP8266
+
 1.1 Software
+
 The software is created with the Sming framework for the ESP8266, to set up the environment the follwoing steps is needed (Also described on https://github.com/anakod/Sming/wiki/Windows-Quickstart): 
+
 1. Install Chocolatey
 Open an adminstrative command window (search for cmd in the search window on the windows start menu, right click and choos run as administrator) paste and run the following in the console window:
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
