@@ -9,8 +9,8 @@ The software is created with the Sming framework for the ESP8266, to set up the 
 Open an adminstrative command window (search for cmd in the search window on the windows start menu, right click and choos run as administrator) paste and run the following in the console window:
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
 2. Add the sming package:
-Paste and run:
-choco sources add -name kireevco -source 'https://www.myget.org/F/kireevco-chocolatey/'
+ Paste and run:
+ choco sources add -name kireevco -source 'https://www.myget.org/F/kireevco-chocolatey/'
 3. Install Sming, this takes quite some time and will install alot off packages:
 Paste and run:
 choco install sming -y -source 'https://www.myget.org/F/kireevco-chocolatey/'
