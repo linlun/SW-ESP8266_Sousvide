@@ -170,10 +170,10 @@ void temperature::run()
 
 	for (i = 0; i < numSensors; i++)
 	{
-		Serial.print(m_Temp_celsius[i]);
-		Serial.print("  ");
+		//Serial.print(m_Temp_celsius[i]);
+		//Serial.print("  ");
 	}
-	Serial.println();
+	//Serial.println();
 }
 
 

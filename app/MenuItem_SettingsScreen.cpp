@@ -33,10 +33,13 @@ for (uint8_t i = 0; i < min(m_elementSize, 7); i++)
 	m_display->setCursor(6,(i+1)*8);
 
 	m_display->print(*m_elements[i+m_viewStart]->m_name);
-	m_display->setCursor(70,(i+1)*8);
-	char result[10];
-	m_elements[i+m_viewStart]->m_GetValue(result);
-	m_display->print(result);
+	if (m_elements[i+m_viewStart]->m_GetValue!= null)
+	{
+		m_display->setCursor(70,(i+1)*8);
+		char result[10];
+		m_elements[i+m_viewStart]->m_GetValue(result);
+		m_display->print(result);
+	}
 }
 
 m_display->setCursor(0,0);
@@ -78,6 +81,10 @@ MenuItem* MenuItem_SettingsScreen::Update (int rotation, bool pressed) {
 				Serial.print(passedTime);
 		if (passedTime > 60 && passedTime < 500)
 		{
+			if (m_elements[m_selected]->m_RunFuncOnPress != null)
+			{
+				m_elements[m_selected]->m_RunFuncOnPress();
+			}
 			return m_elements[m_selected]->m_submenu;
 		}
 		pressTime = 0;
@@ -95,10 +102,25 @@ void MenuItem_SettingsScreen::DeInit () {
 }
 
 
+SettingsElement::SettingsElement(const String* name, MenuItem* submenu)
+{
+	m_name = name;
+	m_submenu = submenu;
+	m_GetValue = null;
+	m_RunFuncOnPress = null;
+}
 SettingsElement::SettingsElement(const String* name, void (*GetValue)(char*), MenuItem* submenu)
 {
 	m_name = name;
 	m_submenu = submenu;
 	m_GetValue = GetValue;
+	m_RunFuncOnPress = null;
+}
+SettingsElement::SettingsElement(const String* name, void (*GetValue)(char*), MenuItem* submenu, void (*RunFuncOnPress)(void))
+{
+	m_name = name;
+	m_submenu = submenu;
+	m_GetValue = GetValue;
+	m_RunFuncOnPress = RunFuncOnPress;
 }
 

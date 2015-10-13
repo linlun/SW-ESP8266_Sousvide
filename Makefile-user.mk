@@ -14,17 +14,20 @@ MODULES = app
 
 ## SMING_HOME sets the path where Sming framework is located.
 ## Windows:
-# SMING_HOME = c:/tools/sming/Sming 
+SMING_HOME = C:\Users\linus\Documents\GitHub\Sming\Sming
 
 # MacOS / Linux
 # SMING_HOME = /opt/sming/Sming
 
 ## COM port parameter is reqruied to flash firmware correctly.
 ## Windows: 
-# COM_PORT = COM3
+ COM_PORT = COM4
 
 # MacOS / Linux:
 # COM_PORT = /dev/tty.usbserial
 
 # Com port speed
-# COM_SPEED	= 115200
+ COM_SPEED	= 115200
+ 
+ # SPIFFs Location
+SPIFF_FILES = web/build

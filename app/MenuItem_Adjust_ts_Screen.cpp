@@ -21,7 +21,7 @@ void MenuItem_Adjust_ts_Screen::Config(Adafruit_SSD1306* display ,MenuItem* subm
 	else
 		tmp = (uint32_t)(m_max);
 
-	while (tmp > 10)
+	while (tmp >= 10)
 	{
 		m_len++;
 		tmp /= 10;
@@ -190,9 +190,9 @@ void MenuItem_Adjust_ts_Screen::checkCharBuf()
 }
 MenuItem* MenuItem_Adjust_ts_Screen::Update (int rotation, bool pressed) {
 
-	if (m_state >= 10) //Adjust mode
+	if (m_state >= 12) //Adjust mode
 	{
-		adjustChar(rotation, &m_charbuf[m_state - 10]);
+		adjustChar(rotation, &m_charbuf[m_state - 12]);
 	} else //Move mode
 	{
 		m_state += rotation;
@@ -205,18 +205,37 @@ MenuItem* MenuItem_Adjust_ts_Screen::Update (int rotation, bool pressed) {
 	if (pressed)
 	{
 		pressTime = millis();
-		Serial.print("PressTime ");
-		Serial.print(pressTime);
+		//Serial.print("PressTime ");
+		//Serial.print(pressTime);
 	}
 
 	if (!pressed & pressTime != 0)
 	{
-		unsigned long passedTime = millis() - pressTime ;
-		Serial.print("PassedTime ");
-				Serial.print(passedTime);
+		unsigned long passedTime = millis() - pressTime;
+		//Serial.print("PassedTime ");
+		//		Serial.print(passedTime);
 		if (passedTime > 60 && passedTime < 500)
 		{
-			if (m_state < m_len)
+			if (m_state == 0)
+			{
+				//Save value
+				String str(m_charbuf);
+				double value = (double)str.toFloat();
+				Serial.print("value was ");
+				Serial.println(value);
+				if (value < m_min)
+					value = m_min;
+				if (value > m_max)
+					value = m_max;
+				m_SetValue(value);
+				return m_submenu;
+			}
+			if (m_state == 1)
+			{
+				//Cancel
+				return m_submenu;
+			}
+			if (m_state < (m_len+2))
 			{
 				m_state += 10;
 			} else if (m_state >= 10)
@@ -226,25 +245,10 @@ MenuItem* MenuItem_Adjust_ts_Screen::Update (int rotation, bool pressed) {
 				//Check and correct if a faulty value is entered
 				checkCharBuf();
 			}
-			if (m_state == m_len)
-			{
-				//Save value
-				String str(m_charbuf);
-				double value = (double)str.toFloat();
-				Serial.print("value was ");
-				Serial.println(value);
-				m_SetValue(value);
-				return m_submenu;
-			}
-			if (m_state == m_len+1)
-			{
-				//Cancel
-				return m_submenu;
-			}
+
 		}
 		pressTime = 0;
 	}
-
 	redraw();
 	return this;
 }

@@ -4,7 +4,7 @@
 #include <SmingCore/SmingCore.h>
 #include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
 #include <WS2812.h>
-
+#include <AppSettings.h>
 #include <MenuItem_MainScreen.h>
 #include <MenuItem_SettingsScreen.h>
 #include <MenuItem_Adjust_d_Screen.h>
@@ -20,14 +20,11 @@
 
 /* PID regulator */
 //Define Variables we'll be connecting to
-double Setpoint, Input, Output;
+double Input, Output;
 
-//Define the aggressive and conservative Tuning Parameters
-double aggKp=4, aggKi=0.2, aggKd=1;
-double consKp=10000, consKi=0.053, consKd=2.254576;
-uint32_t pidPeriod=10000;
+
 //Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint, consKp, consKi, consKd, DIRECT);
+PID myPID(&Input, &Output, &AppSettings.Setpoint, AppSettings.consKp, AppSettings.consKi, AppSettings.consKd, DIRECT);
 
 
 // For i2c oled module.
@@ -47,8 +44,10 @@ Adafruit_SSD1306 display(PIN_OLED_SCL,PIN_OLED_SDA);
  	tempSensor.run();
  }
 
-const String name = "Settings           ";
+const String name = " Settings          ";
 MenuItem_SettingsScreen scr_settings(&name);
+const String wifiname = " Wifi Settings     ";
+MenuItem_SettingsScreen scr_WifiSettings(&wifiname);
 MenuItem_MainScreen scr_main;
 
 unsigned long TimerCounter = 0;
@@ -95,11 +94,11 @@ uint8_t GetPidMode(void)
 
 void SetPidSetPoint(float value)
 {
-	Setpoint = (double) value;
+	AppSettings.Setpoint = (double) value;
 }
 float GetPidSetPoint(void)
 {
-	return (float)Setpoint;
+	return (float)AppSettings.Setpoint;
 }
 float GetPidCurrent(void)
 {
@@ -111,15 +110,15 @@ const String ConsKp_name = "ConsKp";
 MenuItem_Adjust_d_Screen scr_adjConsKp(&ConsKp_name);
 void SetConsKp(double value)
 {
-	consKp = value;
+	AppSettings.consKp = value;
 }
 double GetConsKp(void)
 {
-	return consKp;
+	return AppSettings.consKp;
 }
 void GetConsKpStr(char* str)
 {
-	dtostrf(consKp, 2, 3, str);
+	dtostrf(AppSettings.consKp, 2, 3, str);
 }
 SettingsElement ConsKp(&ConsKp_name, &GetConsKpStr, &scr_adjConsKp);
 
@@ -164,15 +163,15 @@ const String ConsKi_name = "ConsKi";
 MenuItem_Adjust_d_Screen scr_adjConsKi(&ConsKi_name);
 void SetConsKi(double value)
 {
-	consKi = value;
+	AppSettings.consKi = value;
 }
 double GetConsKi(void)
 {
-	return consKi;
+	return AppSettings.consKi;
 }
 void GetConsKiStr(char* str)
 {
-	dtostrf(consKi, 2, 3, str);
+	dtostrf(AppSettings.consKi, 2, 3, str);
 }
 SettingsElement ConsKi(&ConsKi_name, &GetConsKiStr, &scr_adjConsKi);
 
@@ -180,15 +179,15 @@ const String ConsKd_name = "ConsKd";
 MenuItem_Adjust_d_Screen scr_adjConsKd(&ConsKd_name);
 void SetConsKd(double value)
 {
-	consKd = value;
+	AppSettings.consKd = value;
 }
 double GetConsKd(void)
 {
-	return consKd;
+	return AppSettings.consKd;
 }
 void GetConsKdStr(char* str)
 {
-	dtostrf(consKd, 2, 3, str);
+	dtostrf(AppSettings.consKd, 2, 3, str);
 }
 SettingsElement ConsKd(&ConsKd_name, &GetConsKdStr, &scr_adjConsKd);
 
@@ -196,15 +195,15 @@ const String AggKp_name = "AggKp";
 MenuItem_Adjust_d_Screen scr_adjAggKp(&AggKp_name);
 void SetAggKp(double value)
 {
-	aggKp = value;
+	AppSettings.aggKp = value;
 }
 double GetAggKp(void)
 {
-	return aggKp;
+	return AppSettings.aggKp;
 }
 void GetAggKpStr(char* str)
 {
-	dtostrf(aggKp, 2, 3, str);
+	dtostrf(AppSettings.aggKp, 2, 3, str);
 }
 SettingsElement AggKp(&AggKp_name, &GetAggKpStr, &scr_adjAggKp);
 
@@ -212,15 +211,15 @@ const String AggKi_name = "AggKi";
 MenuItem_Adjust_d_Screen scr_adjAggKi(&AggKi_name);
 void SetAggKi(double value)
 {
-	aggKi = value;
+	AppSettings.aggKi = value;
 }
 double GetAggKi(void)
 {
-	return aggKi;
+	return AppSettings.aggKi;
 }
 void GetAggKiStr(char* str)
 {
-	dtostrf(aggKi, 2, 3, str);
+	dtostrf(AppSettings.aggKi, 2, 3, str);
 }
 SettingsElement AggKi(&AggKi_name, &GetAggKiStr, &scr_adjAggKi);
 
@@ -228,44 +227,58 @@ const String AggKd_name = "AggKd";
 MenuItem_Adjust_d_Screen scr_adjAggKd(&AggKd_name);
 void SetAggKd(double value)
 {
-	aggKd = value;
+	AppSettings.aggKd = value;
 }
 double GetAggKd(void)
 {
-	return aggKd;
+	return AppSettings.aggKd;
 }
 void GetAggKdStr(char* str)
 {
-	dtostrf(aggKd, 2, 3, str);
+	dtostrf(AppSettings.aggKd, 2, 3, str);
 }
 SettingsElement AggKd(&AggKd_name, &GetAggKdStr, &scr_adjAggKd);
 
-const String PidTime_name = "Reg.Pe2riod";
+const String PidTime_name = "Reg.Period";
 MenuItem_Adjust_ts_Screen scr_adjPidTime(&PidTime_name);
 void SetPidTime(int32_t value)
 {
-	pidPeriod = value;
+	AppSettings.pidPeriod = value;
 }
 int32_t GetPidTime(void)
 {
-	return pidPeriod;
+	return AppSettings.pidPeriod;
 }
 void GetPidTimeStr(char* str)
 {
-	itoa(pidPeriod, str, 10);
+	itoa(AppSettings.pidPeriod, str, 10);
 }
 SettingsElement PidTime(&PidTime_name, &GetPidTimeStr, &scr_adjPidTime);
 
-
-void GetExit(char* str)
+const String save_name = "Save Settings";
+void SaveSettings()
 {
-	str[0]=0;
+	AppSettings.save();
 }
+void LoadSettings()
+{
+	AppSettings.load();
+}
+SettingsElement Save(&save_name, null, &scr_main, &SaveSettings);
+
+const String restore_name = "Restore Settings";
+SettingsElement Restore(&restore_name, null, &scr_main, &LoadSettings);
+
 const String exit_name = "Exit";
-SettingsElement Exit(&exit_name, &GetExit, &scr_main);
+SettingsElement Exit(&exit_name, &scr_main);
 
-SettingsElement* settingsElements[] = {&ConsKp, &ConsKi, &ConsKd, &AggKp, &AggKi, &AggKd, &PidTime, &SensorMode, &Exit};
+const String wifisettings_name = "Wifi Settings";
+SettingsElement WifiSettings(&wifisettings_name, &scr_WifiSettings);
 
+SettingsElement* settingsElements[] = {&ConsKp, &ConsKi, &ConsKd, &AggKp, &AggKi, &AggKd, &PidTime, &SensorMode, &Restore, &Save, &WifiSettings, &Exit};
+
+SettingsElement WifiExit(&exit_name, &scr_settings);
+SettingsElement* WifiSettingsElements[] = { &WifiExit};
 
 MenuItem* currentMenu;
 Timer procTimer;
@@ -308,30 +321,117 @@ void menuFunction(void)
 
 }
 
-float pidConservativeLimit = 5.0;
 void CalculatePID()
 {
 	Input = tempSensor.get();
-  double gap = abs(Setpoint-Input); //distance away from setpoint
-  if (gap < pidConservativeLimit)
+  double gap = abs(AppSettings.Setpoint-Input); //distance away from setpoint
+  if (gap < AppSettings.pidConservativeLimit)
   {  //we're close to setpoint, use conservative tuning parameters
-	myPID.SetTunings(consKp, consKi, consKd);
+	myPID.SetTunings(AppSettings.consKp, AppSettings.consKi, AppSettings.consKd);
   }
   else
   {
 	 //we're far from setpoint, use aggressive tuning parameters
-	 myPID.SetTunings(aggKp, aggKi, aggKd);
+	 myPID.SetTunings(AppSettings.aggKp, AppSettings.aggKi, AppSettings.aggKd);
   }
 
   myPID.Compute();
   outputPwm.SetDuty( Output/255);
 }
 
+// Will be called when WiFi station network scan was completed
+void listNetworks(bool succeeded, BssList list)
+{
+	if (!succeeded)
+	{
+		Serial.println("Failed to scan networks");
+		return;
+	}
+
+	for (int i = 0; i < list.count(); i++)
+	{
+		Serial.print("\tWiFi: ");
+		Serial.print(list[i].ssid);
+		Serial.print(", ");
+		Serial.print(list[i].getAuthorizationMethodName());
+		if (list[i].hidden) Serial.print(" (hidden)");
+		Serial.println();
+	}
+}
+
+// Will be called when WiFi station was connected to AP
+void connectOk()
+{
+	debugf("I'm CONNECTED");
+	Serial.println(WifiStation.getIP().toString());
+}
+
+// Will be called when WiFi station timeout was reached
+void connectFail()
+{
+	debugf("I'm NOT CONNECTED!");
+	WifiStation.waitConnection(connectOk, 10, connectFail); // Repeat and check again
+}
+
+FTPServer ftp;
+
+BssList networks;
+String network, password;
+Timer connectionTimer;
+
+
+void startFTP()
+{
+	if (!fileExist("index.html"))
+		fileSetContent("index.html", "<h3>Please connect to FTP and upload files from folder 'web/build' (details in code)</h3>");
+
+	// Start FTP server
+	ftp.listen(21);
+	ftp.addUser("me", "123"); // FTP account
+}
+
+// Will be called when system initialization was completed
+void startServers()
+{
+	startFTP();
+	//startWebServer();
+}
+
+void networkScanCompleted(bool succeeded, BssList list)
+{
+	if (succeeded)
+	{
+		for (int i = 0; i < list.count(); i++)
+			if (!list[i].hidden && list[i].ssid.length() > 0)
+				networks.add(list[i]);
+	}
+	networks.sort([](const BssInfo& a, const BssInfo& b){ return b.rssi - a.rssi; } );
+}
 void init()
 {
+	spiffs_mount(); // Mount file system, in order to work with files
+
+	//Define the aggressive and conservative Tuning Parameters
+	if (!AppSettings.exist())
+	{
+		AppSettings.aggKp=4;
+		AppSettings.aggKi=0.2;
+		AppSettings.aggKd=1;
+		AppSettings.consKp=10000;
+		AppSettings.consKi=0.053;
+		AppSettings.consKd=2.254576;
+		AppSettings.pidPeriod=10000;
+		AppSettings.Setpoint = 58;
+		AppSettings.pidConservativeLimit = 5.0;
+		AppSettings.ssid = "Linuxz";
+		AppSettings.password ="asdfghjkl";
+		AppSettings.save();
+	}
+	AppSettings.load();
+
 	//initialize the variables we're linked to
 	Input = 0;
-	Setpoint = 58;
+
 //	pinMode(PIN_LED_WS2812, OUTPUT);
 
 	outputPwm.SetDuty(0);
@@ -348,9 +448,13 @@ void init()
 	scr_adjPidTime.Config(&display, &scr_settings, &GetPidTime, &SetPidTime,1000,100000);
 	scr_main.Config(&display, &scr_settings, &GetPidCurrent, &GetPidSetPoint, &SetPidSetPoint, &GetTimer, &SetTimer, &GetPidMode, &SetPidMode  );
 	scr_settings.Config(&display, settingsElements, (sizeof(settingsElements)/sizeof(*settingsElements)));
-	//currentMenu = &scr_settings;
-	currentMenu = &scr_main;
-	WDT.enable(false); // First (but not the best) option: fully disable watch dog timer
+
+
+
+	scr_WifiSettings.Config(&display, WifiSettingsElements, (sizeof(WifiSettingsElements)/sizeof(*WifiSettingsElements)));
+	currentMenu = &scr_settings;
+	//currentMenu = &scr_main;
+	//WDT.enable(false); // First (but not the best) option: fully disable watch dog timer
 //
 //
 	char buffer1[] = "\x40\x00\x00\x00\x40\x00\x00\x00\x40";
@@ -363,6 +467,36 @@ void init()
 	char buffer2[] = "\x00\x40\x40\x40\x00\x40\x40\x40\x00";
     ws2812_writergb(PIN_LED_WS2812, buffer2, sizeof(buffer2));
 //
+    Serial.systemDebugOutput(true); // Enable debug output to serial
+
+    // Soft access point
+	WifiAccessPoint.enable(true);
+	WifiAccessPoint.config("Sous vide", "", AUTH_OPEN);
+
+	// Station - WiFi client
+	WifiStation.enable(true);
+	if (AppSettings.exist())
+	{
+		Serial.println("Found Appsettings");
+		WifiStation.config(AppSettings.ssid, AppSettings.password);
+		if (!AppSettings.dhcp && !AppSettings.ip.isNull())
+			WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
+	}
+	//WifiStation.config(WIFI_SSID, WIFI_PWD); // Put you SSID and Password here
+
+	// Optional: Change IP addresses (and disable DHCP)
+	//WifiAccessPoint.setIP(IPAddress(192, 168, 2, 1));
+	//WifiStation.setIP(IPAddress(192, 168, 1, 171));
+
+
+	// Print available access points
+	//WifiStation.startScan(listNetworks); // In Sming we can start network scan from init method without additional code
+
+	// Run our method when station was connected to AP (or not connected)
+	WifiStation.waitConnection(connectOk, 30, connectFail); // We recommend 20+ seconds at start
+
+	// Run WEB server on system ready
+	System.onReady(startServers);
 //
 	delay(500);
 	display.clearDisplay();
@@ -383,5 +517,5 @@ void init()
 	procTimer.initializeMs(100, CalculatePID).start();
 
 	char buffer3[] = "\xFF\xFF\xFF\xFF\x00\x00\x00\x00\xFF";
-	    ws2812_writergb(PIN_LED_WS2812, buffer3, sizeof(buffer3));
+	ws2812_writergb(PIN_LED_WS2812, buffer3, sizeof(buffer3));
 }

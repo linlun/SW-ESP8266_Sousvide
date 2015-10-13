@@ -28,6 +28,7 @@
 #define PIN_ROTARY_A	14
 #define PIN_ROTARY_B	4
 #define PIN_ROTARY_SW	2
+#define ROTARY_CHx_INVERT_DIRECTION	1
 #endif
 
 #define MAX_NUM_DS_SENSORS	6

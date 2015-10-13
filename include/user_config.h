@@ -1,6 +1,7 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
+#include "config.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
