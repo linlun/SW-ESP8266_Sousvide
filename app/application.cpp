@@ -1,7 +1,7 @@
-#include <user_config.h>
+#include <application.h>
 #include <rotary.h>
 #include <PID_v1.h>
-#include <SmingCore/SmingCore.h>
+
 #include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
 #include <WS2812.h>
 #include <AppSettings.h>
@@ -9,19 +9,16 @@
 #include <MenuItem_SettingsScreen.h>
 #include <MenuItem_Adjust_d_Screen.h>
 #include <MenuItem_Adjust_ts_Screen.h>
-
-#include <stdlib.h>
 #include <SlowPWM.h>
-
-#include <config.h>
-
 #include <temperature.h>
+#include <WifiMenu.h>
+#include <SettingsMenu.h>
 
 
 /* PID regulator */
 //Define Variables we'll be connecting to
 double Input, Output;
-
+ApplicationSettingsStorage AppSettings;
 
 //Specify the links and initial tuning parameters
 PID myPID(&Input, &Output, &AppSettings.Setpoint, AppSettings.consKp, AppSettings.consKi, AppSettings.consKd, DIRECT);
@@ -44,10 +41,6 @@ Adafruit_SSD1306 display(PIN_OLED_SCL,PIN_OLED_SDA);
  	tempSensor.run();
  }
 
-const String name = " Settings          ";
-MenuItem_SettingsScreen scr_settings(&name);
-const String wifiname = " Wifi Settings     ";
-MenuItem_SettingsScreen scr_WifiSettings(&wifiname);
 MenuItem_MainScreen scr_main;
 
 unsigned long TimerCounter = 0;
@@ -104,181 +97,6 @@ float GetPidCurrent(void)
 {
 	return (float)Input;
 }
-
-
-const String ConsKp_name = "ConsKp";
-MenuItem_Adjust_d_Screen scr_adjConsKp(&ConsKp_name);
-void SetConsKp(double value)
-{
-	AppSettings.consKp = value;
-}
-double GetConsKp(void)
-{
-	return AppSettings.consKp;
-}
-void GetConsKpStr(char* str)
-{
-	dtostrf(AppSettings.consKp, 2, 3, str);
-}
-SettingsElement ConsKp(&ConsKp_name, &GetConsKpStr, &scr_adjConsKp);
-
-const String SensorMode_name = "Temp Mode";
-MenuItem_Adjust_TempMode_Screen scr_adjSensorMode(&SensorMode_name);
-void SetSensorMode(TEMP_READ_MODE mode, uint8_t id)
-{
-	tempSensor.setMode(mode,id);
-}
-TEMP_READ_MODE GetSensorMode(uint8_t* id)
-{
-	return tempSensor.getMode(id);
-}
-void GetSensorModeStr(char* str)
-{
-	uint8_t id;
-	TEMP_READ_MODE mode = tempSensor.getMode(&id);
-
-	switch (mode)
-	{
-		case TEMP_READ_MODE::MAX:
-			strcpy(str,"Max");
-			break;
-		case TEMP_READ_MODE::MIN:
-			strcpy(str,"Min");
-			break;
-		case TEMP_READ_MODE::MEAN:
-			strcpy(str,"Mean");
-			break;
-		case TEMP_READ_MODE::SENSORID:
-			strcpy(str,"Sens ");
-			char buff[3];
-			itoa(id, buff, 10);
-			strcat(str, buff);
-			break;
-	}
-	//dtostrf(consKi, 2, 3, str);
-}
-SettingsElement SensorMode(&SensorMode_name, &GetSensorModeStr, &scr_adjSensorMode);
-
-const String ConsKi_name = "ConsKi";
-MenuItem_Adjust_d_Screen scr_adjConsKi(&ConsKi_name);
-void SetConsKi(double value)
-{
-	AppSettings.consKi = value;
-}
-double GetConsKi(void)
-{
-	return AppSettings.consKi;
-}
-void GetConsKiStr(char* str)
-{
-	dtostrf(AppSettings.consKi, 2, 3, str);
-}
-SettingsElement ConsKi(&ConsKi_name, &GetConsKiStr, &scr_adjConsKi);
-
-const String ConsKd_name = "ConsKd";
-MenuItem_Adjust_d_Screen scr_adjConsKd(&ConsKd_name);
-void SetConsKd(double value)
-{
-	AppSettings.consKd = value;
-}
-double GetConsKd(void)
-{
-	return AppSettings.consKd;
-}
-void GetConsKdStr(char* str)
-{
-	dtostrf(AppSettings.consKd, 2, 3, str);
-}
-SettingsElement ConsKd(&ConsKd_name, &GetConsKdStr, &scr_adjConsKd);
-
-const String AggKp_name = "AggKp";
-MenuItem_Adjust_d_Screen scr_adjAggKp(&AggKp_name);
-void SetAggKp(double value)
-{
-	AppSettings.aggKp = value;
-}
-double GetAggKp(void)
-{
-	return AppSettings.aggKp;
-}
-void GetAggKpStr(char* str)
-{
-	dtostrf(AppSettings.aggKp, 2, 3, str);
-}
-SettingsElement AggKp(&AggKp_name, &GetAggKpStr, &scr_adjAggKp);
-
-const String AggKi_name = "AggKi";
-MenuItem_Adjust_d_Screen scr_adjAggKi(&AggKi_name);
-void SetAggKi(double value)
-{
-	AppSettings.aggKi = value;
-}
-double GetAggKi(void)
-{
-	return AppSettings.aggKi;
-}
-void GetAggKiStr(char* str)
-{
-	dtostrf(AppSettings.aggKi, 2, 3, str);
-}
-SettingsElement AggKi(&AggKi_name, &GetAggKiStr, &scr_adjAggKi);
-
-const String AggKd_name = "AggKd";
-MenuItem_Adjust_d_Screen scr_adjAggKd(&AggKd_name);
-void SetAggKd(double value)
-{
-	AppSettings.aggKd = value;
-}
-double GetAggKd(void)
-{
-	return AppSettings.aggKd;
-}
-void GetAggKdStr(char* str)
-{
-	dtostrf(AppSettings.aggKd, 2, 3, str);
-}
-SettingsElement AggKd(&AggKd_name, &GetAggKdStr, &scr_adjAggKd);
-
-const String PidTime_name = "Reg.Period";
-MenuItem_Adjust_ts_Screen scr_adjPidTime(&PidTime_name);
-void SetPidTime(int32_t value)
-{
-	AppSettings.pidPeriod = value;
-}
-int32_t GetPidTime(void)
-{
-	return AppSettings.pidPeriod;
-}
-void GetPidTimeStr(char* str)
-{
-	itoa(AppSettings.pidPeriod, str, 10);
-}
-SettingsElement PidTime(&PidTime_name, &GetPidTimeStr, &scr_adjPidTime);
-
-const String save_name = "Save Settings";
-void SaveSettings()
-{
-	AppSettings.save();
-}
-void LoadSettings()
-{
-	AppSettings.load();
-}
-SettingsElement Save(&save_name, null, &scr_main, &SaveSettings);
-
-const String restore_name = "Restore Settings";
-SettingsElement Restore(&restore_name, null, &scr_main, &LoadSettings);
-
-const String exit_name = "Exit";
-SettingsElement Exit(&exit_name, &scr_main);
-
-const String wifisettings_name = "Wifi Settings";
-SettingsElement WifiSettings(&wifisettings_name, &scr_WifiSettings);
-
-SettingsElement* settingsElements[] = {&ConsKp, &ConsKi, &ConsKd, &AggKp, &AggKi, &AggKd, &PidTime, &SensorMode, &Restore, &Save, &WifiSettings, &Exit};
-
-SettingsElement WifiExit(&exit_name, &scr_settings);
-SettingsElement* WifiSettingsElements[] = { &WifiExit};
 
 MenuItem* currentMenu;
 Timer procTimer;
@@ -375,7 +193,6 @@ void connectFail()
 
 FTPServer ftp;
 
-BssList networks;
 String network, password;
 Timer connectionTimer;
 
@@ -397,16 +214,7 @@ void startServers()
 	//startWebServer();
 }
 
-void networkScanCompleted(bool succeeded, BssList list)
-{
-	if (succeeded)
-	{
-		for (int i = 0; i < list.count(); i++)
-			if (!list[i].hidden && list[i].ssid.length() > 0)
-				networks.add(list[i]);
-	}
-	networks.sort([](const BssInfo& a, const BssInfo& b){ return b.rssi - a.rssi; } );
-}
+
 void init()
 {
 	spiffs_mount(); // Mount file system, in order to work with files
@@ -414,6 +222,7 @@ void init()
 	//Define the aggressive and conservative Tuning Parameters
 	if (!AppSettings.exist())
 	{
+		Serial.println("Created Appsettings");
 		AppSettings.aggKp=4;
 		AppSettings.aggKi=0.2;
 		AppSettings.aggKd=1;
@@ -427,8 +236,14 @@ void init()
 		AppSettings.password ="asdfghjkl";
 		AppSettings.save();
 	}
+	Serial.print("Loading Appsettings...");
 	AppSettings.load();
-
+	Serial.println("done");
+	Serial.print("Main SSID: ");
+	Serial.println(AppSettings.ssid);
+	char buffer[30];
+	   sprintf(buffer, "with %%p:  x    = %p\n", AppSettings);
+	   Serial.print(buffer);
 	//initialize the variables we're linked to
 	Input = 0;
 
@@ -438,20 +253,13 @@ void init()
 	outputPwm.Start();
 //turn the PID on
 	myPID.SetMode(AUTOMATIC);
-	scr_adjSensorMode.Config(&display, &scr_settings, &GetSensorMode, &SetSensorMode,&tempSensor);
-	scr_adjConsKp.Config(&display, &scr_settings, &GetConsKp, &SetConsKp);
-	scr_adjConsKi.Config(&display, &scr_settings, &GetConsKi, &SetConsKi);
-	scr_adjConsKd.Config(&display, &scr_settings, &GetConsKd, &SetConsKd);
-	scr_adjAggKp.Config(&display, &scr_settings, &GetAggKp, &SetAggKp);
-	scr_adjAggKi.Config(&display, &scr_settings, &GetAggKi, &SetAggKi);
-	scr_adjAggKd.Config(&display, &scr_settings, &GetAggKd, &SetAggKd);
-	scr_adjPidTime.Config(&display, &scr_settings, &GetPidTime, &SetPidTime,1000,100000);
+
+	SettingsMenuConfig(&display);
+	WifiMenuConfig(&display);
+
 	scr_main.Config(&display, &scr_settings, &GetPidCurrent, &GetPidSetPoint, &SetPidSetPoint, &GetTimer, &SetTimer, &GetPidMode, &SetPidMode  );
-	scr_settings.Config(&display, settingsElements, (sizeof(settingsElements)/sizeof(*settingsElements)));
 
 
-
-	scr_WifiSettings.Config(&display, WifiSettingsElements, (sizeof(WifiSettingsElements)/sizeof(*WifiSettingsElements)));
 	currentMenu = &scr_settings;
 	//currentMenu = &scr_main;
 	//WDT.enable(false); // First (but not the best) option: fully disable watch dog timer
@@ -477,7 +285,6 @@ void init()
 	WifiStation.enable(true);
 	if (AppSettings.exist())
 	{
-		Serial.println("Found Appsettings");
 		WifiStation.config(AppSettings.ssid, AppSettings.password);
 		if (!AppSettings.dhcp && !AppSettings.ip.isNull())
 			WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
