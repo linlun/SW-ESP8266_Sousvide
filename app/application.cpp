@@ -157,25 +157,7 @@ void CalculatePID()
   outputPwm.SetDuty( Output/255);
 }
 
-// Will be called when WiFi station network scan was completed
-void listNetworks(bool succeeded, BssList list)
-{
-	if (!succeeded)
-	{
-		Serial.println("Failed to scan networks");
-		return;
-	}
 
-	for (int i = 0; i < list.count(); i++)
-	{
-		Serial.print("\tWiFi: ");
-		Serial.print(list[i].ssid);
-		Serial.print(", ");
-		Serial.print(list[i].getAuthorizationMethodName());
-		if (list[i].hidden) Serial.print(" (hidden)");
-		Serial.println();
-	}
-}
 
 // Will be called when WiFi station was connected to AP
 void connectOk()
@@ -232,8 +214,8 @@ void init()
 		AppSettings.pidPeriod=10000;
 		AppSettings.Setpoint = 58;
 		AppSettings.pidConservativeLimit = 5.0;
-		AppSettings.ssid = "Linuxz";
-		AppSettings.password ="asdfghjkl";
+		AppSettings.ssid = WIFI_SSID;
+		AppSettings.password = WIFI_PASS;
 		AppSettings.save();
 	}
 	Serial.print("Loading Appsettings...");
