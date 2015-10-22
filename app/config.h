@@ -8,7 +8,8 @@
 #ifndef APP_CONFIG_H_
 #define APP_CONFIG_H_
 
-
+#define WIFI_SSID  "Linuxz"
+#define WIFI_PASS  "asdfghjkl"
 #ifdef Old_PCB
 
 #define PIN_DS18B20 5 // GPIO0

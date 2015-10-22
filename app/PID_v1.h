@@ -48,6 +48,9 @@ class PID
 	double GetKp();						  // These functions query the pid for interal values.
 	double GetKi();						  //  they were created mainly for the pid front-end,
 	double GetKd();						  // where it's important to know what is actually 
+	double GetKpTerm();
+	double GetKiTerm();
+	double GetKdTerm();
 	int GetMode();						  //  inside the PID.
 	int GetDirection();					  //
 
@@ -70,7 +73,7 @@ class PID
                                   //   what these values are.  with pointers we'll just know.
 			  
 	unsigned long lastTime;
-	double ITerm, lastInput;
+	double PTerm,ITerm,DTerm, lastInput;
 
 	unsigned long SampleTime;
 	double outMin, outMax;

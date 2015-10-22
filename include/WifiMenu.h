@@ -8,9 +8,10 @@
 #ifndef INCLUDE_WIFIMENU_H_
 #define INCLUDE_WIFIMENU_H_
 #include "MenuItem_SettingsScreen.h"
+#include "MenuItem_Adjust_text_Screen.h"
 #include "application.h"
 extern MenuItem_SettingsScreen scr_WifiSettings;
-
+extern BssList networks;
 
 void WifiMenuConfig(Adafruit_SSD1306 *display);
 

@@ -63,8 +63,21 @@ SettingsElement Ssid(&Ssid_name, &GetSsidStr, &scr_adjSSID);//&scr_adjSsid);
 const String ScanNetwork_name = "Scan for networks";
 SettingsElement ScanNetwork(&ScanNetwork_name, null, &scr_WifiSettings, &GetSSIDList);//&scr_adjSsid);
 
+void SetPass(String password)
+{
+	AppSettings.password = password;
+}
+String GetPass(void)
+{
+	return AppSettings.password;
+}
+const String PassSelect_name = "Password:";
+MenuItem_Adjust_text_Screen scr_adjPASS(&PassSelect_name);
+const String Password_name = "Set password";
+SettingsElement password_setting(&Password_name, null, &scr_adjPASS);//&scr_adjSsid);
 
-SettingsElement* WifiSettingsElements[] = { &ScanNetwork, &Ssid, &WifiExit};
+
+SettingsElement* WifiSettingsElements[] = { &ScanNetwork, &Ssid, &password_setting, &WifiExit};
 
 void WifiMenuConfig(Adafruit_SSD1306 *display)
 {
@@ -79,6 +92,8 @@ void WifiMenuConfig(Adafruit_SSD1306 *display)
 	scr_WifiSettings.Config(display, WifiSettingsElements, (sizeof(WifiSettingsElements)/sizeof(*WifiSettingsElements)));
 
 	scr_adjSSID.Config(display, &scr_WifiSettings, &networks);
+
+	scr_adjPASS.Config(display, &scr_WifiSettings, &GetPass, &SetPass );
 }
 
 

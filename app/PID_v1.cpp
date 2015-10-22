@@ -20,7 +20,8 @@
 PID::PID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int ControllerDirection)
 {
-	
+	PTerm = 0;
+	DTerm = 0;
     myOutput = Output;
     myInput = Input;
     mySetpoint = Setpoint;
@@ -59,8 +60,10 @@ bool PID::Compute()
       else if(ITerm < outMin) ITerm= outMin;
       double dInput = (input - lastInput);
  
+      PTerm = kp * error;
+      DTerm = kd * dInput;
       /*Compute PID Output*/
-      double output = kp * error + ITerm- kd * dInput;
+      double output = PTerm + ITerm- DTerm;
       
 	  if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
@@ -192,4 +195,8 @@ double PID::GetKi(){ return  dispKi;}
 double PID::GetKd(){ return  dispKd;}
 int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int PID::GetDirection(){ return controllerDirection;}
+
+double PID::GetKpTerm(){ return PTerm;}
+double PID::GetKiTerm(){ return ITerm;}
+double PID::GetKdTerm(){ return DTerm;}
 
