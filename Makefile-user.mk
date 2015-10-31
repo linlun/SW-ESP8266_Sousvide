@@ -14,7 +14,9 @@ MODULES = app
 
 ## SMING_HOME sets the path where Sming framework is located.
 ## Windows:
-SMING_HOME = C:\Users\linus\Documents\GitHub\Sming\Sming
+#SMING_HOME = C:\Users\linus\Documents\GitHub\Sming\Sming
+SMING_HOME = C:\Users\linus\Documents\GitHub\Sming-ArduinoJson_R5_Alpha\Sming
+
 
 # MacOS / Linux
 # SMING_HOME = /opt/sming/Sming

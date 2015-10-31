@@ -4,7 +4,7 @@
 
 #include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
 #include <WS2812.h>
-#include <AppSettings.h>
+#include "AppSettings.h"
 #include <MenuItem_MainScreen.h>
 #include <MenuItem_SettingsScreen.h>
 #include <MenuItem_Adjust_d_Screen.h>
@@ -258,7 +258,7 @@ void onAjaxNetworkList(HttpRequest &request, HttpResponse &response)
 	if (connected)
 	{
 		// Copy full string to JSON buffer memory
-		json.addCopy("network", WifiStation.getSSID());
+		json["network"]= WifiStation.getSSID();
 	}
 
 	JsonArray& netlist = json.createNestedArray("available");
@@ -266,11 +266,11 @@ void onAjaxNetworkList(HttpRequest &request, HttpResponse &response)
 	{
 		if (networks[i].hidden) continue;
 		JsonObject &item = netlist.createNestedObject();
-		item.add("id", (int)networks[i].getHashId());
+		item["id"] = (int)networks[i].getHashId();
 		// Copy full string to JSON buffer memory
-		item.addCopy("title", networks[i].ssid);
-		item.add("signal", networks[i].rssi);
-		item.add("encryption", networks[i].getAuthorizationMethodName());
+		item["title"] = networks[i].ssid;
+		item["signal"] = networks[i].rssi;
+		item["encryption"] = networks[i].getAuthorizationMethodName();
 	}
 
 	response.setAllowCrossDomainOrigin("*");
@@ -329,26 +329,38 @@ void onAjaxConnect(HttpRequest &request, HttpResponse &response)
 	response.sendJsonObject(stream);
 }
 
-
-
+const char* names[] = { "sensor_0", "sensor_1", "sensor_2", "sensor_3", "sensor_4", "sensor_5" };
 void onApiSensors(HttpRequest &request, HttpResponse &response)
 {
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
 	json["status"] = (bool)true;
+	json["heap"] = system_get_free_heap_size();
 	JsonObject& sensors = json.createNestedObject("sensors");
 	sensors["temperature"] = tempSensor.get();
+	int i = 4;
+	while (i--) {
+	    String k = "testing" + String(i) +String("_bla");
+	    String v = "value"+ String(i+5) +String("_val");
+		json[k] = v;
+	}
 	for( int i = 0; i < tempSensor.numSensors; i++)
 	{
+
 		//String number = i;
 		char buff[3];
 		itoa(i, buff, 10);
 		String desiredString = "sensor_";
 		desiredString += buff;
 		sensors[desiredString] = tempSensor.get(i);
+
+		//sensors[names[i]] = tempSensor.get(i);
 	}
 	JsonObject& pid = json.createNestedObject("pid");
 	pid["Setpoint"] = AppSettings.Setpoint;
+	pid["Kp"] = myPID.GetKp();
+	pid["Ki"] = myPID.GetKi();
+	pid["Kd"] = myPID.GetKd();
 	pid["aggKp"] = AppSettings.aggKp;
 	pid["aggKi"] = AppSettings.aggKi;
 	pid["aggKd"] = AppSettings.aggKd;
@@ -359,8 +371,8 @@ void onApiSensors(HttpRequest &request, HttpResponse &response)
 	pid["pidConservativeLimit"] = AppSettings.pidConservativeLimit;
 	pid["output"] = Output;
 	pid["PTerm"] = myPID.GetKpTerm();
-	pid["ITerm"] = myPID.GetKiTerm();;
-	pid["DTerm"] = myPID.GetKdTerm();;
+	pid["ITerm"] = myPID.GetKiTerm();
+	pid["DTerm"] = myPID.GetKdTerm();
 	response.sendJsonObject(stream);
 }
 
@@ -392,14 +404,14 @@ void init()
 	if (!AppSettings.exist())
 	{
 		Serial.println("Created Appsettings");
-		AppSettings.aggKp=4;
-		AppSettings.aggKi=0.2;
-		AppSettings.aggKd=1;
-		AppSettings.consKp=10000;
-		AppSettings.consKi=0.053;
-		AppSettings.consKd=2.254576;
-		AppSettings.pidPeriod=10000;
-		AppSettings.Setpoint = 58;
+		AppSettings.aggKp=2000;
+		AppSettings.aggKi=0;
+		AppSettings.aggKd=10;
+		AppSettings.consKp=500;
+		AppSettings.consKi=0.3;
+		AppSettings.consKd=0;
+		AppSettings.pidPeriod=15000;
+		AppSettings.Setpoint = 40;
 		AppSettings.pidConservativeLimit = 5.0;
 		AppSettings.ssid = WIFI_SSID;
 		AppSettings.password = WIFI_PASS;
@@ -410,6 +422,8 @@ void init()
 	Serial.println("done");
 	Serial.print("Main SSID: ");
 	Serial.println(AppSettings.ssid);
+	Serial.print("Main password: ");
+		Serial.println(AppSettings.password);
 	char buffer[30];
 	   sprintf(buffer, "with %%p:  x    = %p\n", AppSettings);
 	   Serial.print(buffer);
@@ -455,8 +469,12 @@ void init()
 	if (AppSettings.exist())
 	{
 		WifiStation.config(AppSettings.ssid, AppSettings.password);
+		Serial.println("Found appsettings");
 		if (!AppSettings.dhcp && !AppSettings.ip.isNull())
+		{
 			WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
+			Serial.println("Using static ip");
+		}
 	}
 	//WifiStation.config(WIFI_SSID, WIFI_PWD); // Put you SSID and Password here
 
