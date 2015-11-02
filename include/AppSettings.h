@@ -23,14 +23,14 @@ struct ApplicationSettingsStorage
 	IPAddress netmask;
 	IPAddress gateway;
 
-	double Setpoint;
+	float Setpoint;
 	//Define the aggressive and conservative Tuning Parameters
-	double aggKp;
-	double aggKi;
-	double aggKd;
-	double consKp;
-	double consKi;
-	double consKd;
+	float aggKp;
+	float aggKi;
+	float aggKd;
+	float consKp;
+	float consKi;
+	float consKd;
 	uint32_t pidPeriod;
 	float pidConservativeLimit;
 

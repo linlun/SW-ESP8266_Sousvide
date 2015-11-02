@@ -13,16 +13,21 @@
 #include <temperature.h>
 #include <WifiMenu.h>
 #include <SettingsMenu.h>
+#include <AdaptiveRegulator.h>
+//#define DONOTUSEPID	1
 
+enum RegulatorTypes { REG_PID, REG_ADAPTIVE };
+RegulatorTypes usedRegulator = REG_ADAPTIVE;
 
 /* PID regulator */
 //Define Variables we'll be connecting to
-double Input, Output;
+float Input, Output;
 ApplicationSettingsStorage AppSettings;
 
+#ifndef DONOTUSEPID
 //Specify the links and initial tuning parameters
 PID myPID(&Input, &Output, &AppSettings.Setpoint, AppSettings.consKp, AppSettings.consKi, AppSettings.consKd, DIRECT);
-
+#endif
 
 // For i2c oled module.
 // Default i2c pins 0 and 2
@@ -51,15 +56,20 @@ void pollEncoder(void)
 	rotary.pollEncoder();
 }
 
+AdaptiveRegulator myReg(PIN_RELAY,&Input, &AppSettings.Setpoint);
+
+#ifndef DONOTUSEPID
 void PwmUpdate(void);
 SlowPWM outputPwm(PIN_RELAY,1000,&PwmUpdate);
+
+
 
 void PwmUpdate(void)
 {
 	//Serial.println("ext timer int");
 	outputPwm.timerInt();
 }
-
+#endif
 
 void SetTimer(unsigned long value)
 {
@@ -74,20 +84,28 @@ void SetPidMode(uint8_t mode)
 {
 	if (mode == MANUAL)
 	{
+#ifndef DONOTUSEPID
 		outputPwm.SetDuty( 0 );
+#endif
 		Output = 0;
 	}
+#ifndef DONOTUSEPID
 	myPID.SetMode((int)mode);
+#endif
 }
 
 uint8_t GetPidMode(void)
 {
+#ifndef DONOTUSEPID
 	return (uint8_t)myPID.GetMode();
+#else
+	return 1;
+#endif
 }
 
 void SetPidSetPoint(float value)
 {
-	AppSettings.Setpoint = (double) value;
+	AppSettings.Setpoint = (float) value;
 }
 float GetPidSetPoint(void)
 {
@@ -97,6 +115,7 @@ float GetPidCurrent(void)
 {
 	return (float)Input;
 }
+
 
 MenuItem* currentMenu;
 Timer procTimer;
@@ -139,22 +158,39 @@ void menuFunction(void)
 
 }
 
-void CalculatePID()
+void CalculateRegulator()
 {
+	float gap;
 	Input = tempSensor.get();
-  double gap = abs(AppSettings.Setpoint-Input); //distance away from setpoint
-  if (gap < AppSettings.pidConservativeLimit)
-  {  //we're close to setpoint, use conservative tuning parameters
-	myPID.SetTunings(AppSettings.consKp, AppSettings.consKi, AppSettings.consKd);
-  }
-  else
-  {
-	 //we're far from setpoint, use aggressive tuning parameters
-	 myPID.SetTunings(AppSettings.aggKp, AppSettings.aggKi, AppSettings.aggKd);
-  }
+	switch (usedRegulator)
+	{
+	case REG_ADAPTIVE:
+		if (Input > 20.0)
+		{
+			myReg.Compute();
+		}
+		break;
+	case REG_PID:
+#ifndef DONOTUSEPID
+		gap = abs(AppSettings.Setpoint-Input); //distance away from setpoint
+		if (gap < AppSettings.pidConservativeLimit)
+		{
+			//we're close to setpoint, use conservative tuning parameters
+			myPID.SetTunings(AppSettings.consKp, AppSettings.consKi, AppSettings.consKd);
+		}
+		else
+		{
+			//we're far from setpoint, use aggressive tuning parameters
+			myPID.SetTunings(AppSettings.aggKp, AppSettings.aggKi, AppSettings.aggKd);
+		}
 
-  myPID.Compute();
-  outputPwm.SetDuty( Output/255);
+		myPID.Compute();
+		outputPwm.SetDuty( Output/255);
+#endif
+		break;
+	default:
+		break;
+	}
 }
 
 
@@ -329,7 +365,7 @@ void onAjaxConnect(HttpRequest &request, HttpResponse &response)
 	response.sendJsonObject(stream);
 }
 
-const char* names[] = { "sensor_0", "sensor_1", "sensor_2", "sensor_3", "sensor_4", "sensor_5" };
+//const char* names[] = { "sensor_0", "sensor_1", "sensor_2", "sensor_3", "sensor_4", "sensor_5" };
 void onApiSensors(HttpRequest &request, HttpResponse &response)
 {
 	JsonObjectStream* stream = new JsonObjectStream();
@@ -338,41 +374,52 @@ void onApiSensors(HttpRequest &request, HttpResponse &response)
 	json["heap"] = system_get_free_heap_size();
 	JsonObject& sensors = json.createNestedObject("sensors");
 	sensors["temperature"] = tempSensor.get();
-	int i = 4;
-	while (i--) {
-	    String k = "testing" + String(i) +String("_bla");
-	    String v = "value"+ String(i+5) +String("_val");
-		json[k] = v;
-	}
 	for( int i = 0; i < tempSensor.numSensors; i++)
 	{
-
-		//String number = i;
 		char buff[3];
 		itoa(i, buff, 10);
 		String desiredString = "sensor_";
 		desiredString += buff;
 		sensors[desiredString] = tempSensor.get(i);
-
 		//sensors[names[i]] = tempSensor.get(i);
 	}
-	JsonObject& pid = json.createNestedObject("pid");
-	pid["Setpoint"] = AppSettings.Setpoint;
-	pid["Kp"] = myPID.GetKp();
-	pid["Ki"] = myPID.GetKi();
-	pid["Kd"] = myPID.GetKd();
-	pid["aggKp"] = AppSettings.aggKp;
-	pid["aggKi"] = AppSettings.aggKi;
-	pid["aggKd"] = AppSettings.aggKd;
-	pid["consKp"] = AppSettings.consKp;
-	pid["consKi"] = AppSettings.consKi;
-	pid["consKd"] = AppSettings.consKd;
-	pid["pidPeriod"] = AppSettings.pidPeriod;
-	pid["pidConservativeLimit"] = AppSettings.pidConservativeLimit;
-	pid["output"] = Output;
-	pid["PTerm"] = myPID.GetKpTerm();
-	pid["ITerm"] = myPID.GetKiTerm();
-	pid["DTerm"] = myPID.GetKdTerm();
+	JsonObject& regulator = json.createNestedObject("reg");
+	switch (usedRegulator)
+		{
+		case REG_ADAPTIVE:
+			regulator["Type"] = "Adaptive";
+			regulator["Setpoint"] = AppSettings.Setpoint;
+			regulator["State"] = myReg.opState;
+			if (myReg.isHeatOn)
+				regulator["output"] = 255.0;
+			else
+				regulator["output"] = 0;
+			break;
+		case REG_PID:
+#ifndef DONOTUSEPID
+			regulator["Type"] = "PID";
+			regulator["Setpoint"] = AppSettings.Setpoint;
+			regulator["Kp"] = myPID.GetKp();
+			regulator["Ki"] = myPID.GetKi();
+			regulator["Kd"] = myPID.GetKd();
+			regulator["aggKp"] = AppSettings.aggKp;
+			regulator["aggKi"] = AppSettings.aggKi;
+			regulator["aggKd"] = AppSettings.aggKd;
+			regulator["consKp"] = AppSettings.consKp;
+			regulator["consKi"] = AppSettings.consKi;
+			regulator["consKd"] = AppSettings.consKd;
+			regulator["pidPeriod"] = AppSettings.pidPeriod;
+			regulator["pidConservativeLimit"] = AppSettings.pidConservativeLimit;
+			regulator["output"] = Output;
+			regulator["PTerm"] = myPID.GetKpTerm();
+			regulator["ITerm"] = myPID.GetKiTerm();
+			regulator["DTerm"] = myPID.GetKdTerm();
+#endif
+			break;
+		default:
+			break;
+		}
+
 	response.sendJsonObject(stream);
 }
 
@@ -411,7 +458,7 @@ void init()
 		AppSettings.consKi=0.3;
 		AppSettings.consKd=0;
 		AppSettings.pidPeriod=15000;
-		AppSettings.Setpoint = 40;
+		AppSettings.Setpoint = 48;
 		AppSettings.pidConservativeLimit = 5.0;
 		AppSettings.ssid = WIFI_SSID;
 		AppSettings.password = WIFI_PASS;
@@ -431,12 +478,19 @@ void init()
 	Input = 0;
 
 //	pinMode(PIN_LED_WS2812, OUTPUT);
-
+#ifndef DONOTUSEPID
+if (usedRegulator == REG_PID)
+{
 	outputPwm.SetDuty(0);
 	outputPwm.Start();
 //turn the PID on
 	myPID.SetMode(AUTOMATIC);
-
+}
+#endif
+if (usedRegulator == REG_ADAPTIVE)
+{
+	;
+}
 	SettingsMenuConfig(&display);
 	WifiMenuConfig(&display);
 
@@ -458,7 +512,7 @@ void init()
 	char buffer2[] = "\x00\x40\x40\x40\x00\x40\x40\x40\x00";
     ws2812_writergb(PIN_LED_WS2812, buffer2, sizeof(buffer2));
 //
-    Serial.systemDebugOutput(true); // Enable debug output to serial
+    Serial.systemDebugOutput(false); // Enable debug output to serial
 
     // Soft access point
 	WifiAccessPoint.enable(true);
@@ -492,6 +546,9 @@ void init()
 	// Run WEB server on system ready
 	System.onReady(startServers);
 //
+	tempSensor.init();
+		tempTimer.initializeMs(1000, runTempSensor).start();
+
 	delay(500);
 	display.clearDisplay();
 //	Serial.println("fill");
@@ -504,11 +561,10 @@ void init()
 	currentMenu->Init();
 	currentMenu->Update(0,false);
 
-	tempSensor.init();
-	tempTimer.initializeMs(1000, runTempSensor).start();
+
 
 	menuTimer.initializeMs(50, menuFunction).start();
-	procTimer.initializeMs(100, CalculatePID).start();
+	procTimer.initializeMs(100, CalculateRegulator).start();
 
 	char buffer3[] = "\xFF\xFF\xFF\xFF\x00\x00\x00\x00\xFF";
 	ws2812_writergb(PIN_LED_WS2812, buffer3, sizeof(buffer3));
