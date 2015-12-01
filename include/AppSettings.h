@@ -12,6 +12,9 @@
 
 #define APP_SETTINGS_FILE "settings.conf" // leading point for security reasons :)
 
+enum RegulatorTypes { REG_PID, REG_ADAPTIVE,REG_PID_ONLY};
+
+
 struct ApplicationSettingsStorage
 {
 	String ssid;
@@ -31,8 +34,14 @@ struct ApplicationSettingsStorage
 	float consKp;
 	float consKi;
 	float consKd;
+	float OuterRange;
+	float InnerRange;
+	float Offset;
+	float Factor;
 	uint32_t pidPeriod;
 	float pidConservativeLimit;
+	RegulatorTypes usedRegulator;
+
 
 	void load()
 	{
@@ -65,6 +74,13 @@ struct ApplicationSettingsStorage
 			consKd = pid["consKd"];
 			pidPeriod = pid["pidPeriod"];
 			pidConservativeLimit = pid["pidConservativeLimit"];
+			OuterRange = pid["OuterRange"];
+			InnerRange = pid["InnerRange"];
+			Offset = pid["Offset"];
+			Factor = pid["Factor"];
+
+			usedRegulator = (RegulatorTypes)(int)pid["usedRegulator"];
+
 
 			delete[] jsonString;
 		}
@@ -99,7 +115,11 @@ struct ApplicationSettingsStorage
 		pid["consKd"] = consKd;
 		pid["pidPeriod"] = pidPeriod;
 		pid["pidConservativeLimit"] = pidConservativeLimit;
-
+		pid["OuterRange"] = OuterRange;
+		pid["InnerRange"] =InnerRange;
+		pid["Offset"] =Offset;
+		pid["Factor"] =Factor;
+		pid["usedRegulator"]=(int)usedRegulator;
 
 		//TODO: add direct file stream writing
 		String rootString;

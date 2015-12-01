@@ -11,6 +11,7 @@
 #include "temperature.h"
 #include "WifiMenu.h"
 #include "MenuItem_Adjust_d_Screen.h"
+#include "MenuItem_Adjust_Enum_Screen.h"
 #include "MenuItem_Adjust_ts_Screen.h"
 
 const String name = " Settings          ";
@@ -32,6 +33,26 @@ void GetConsKpStr(char* str)
 	dtostrf(AppSettings.consKp, 2, 3, str);
 }
 SettingsElement ConsKp(&ConsKp_name, &GetConsKpStr, &scr_adjConsKp);
+
+const String RegulatorType_name = "Reg. Type";
+MenuItem_Adjust_Enum_Screen scr_adjRegulatorType(&RegulatorType_name);
+void SetRegulatorType(int value)
+{
+	AppSettings.usedRegulator = (RegulatorTypes)value;
+}
+int GetRegulatorType()
+{
+	return AppSettings.usedRegulator;
+}
+
+String regulatorTypes[3] = {"PID", "Adaptive","PID only"};
+void GetRegulatorTypeStr(char* str)
+{
+	//regulatorTypes[AppSettings.usedRegulator].toCharArray(str, regulatorTypes[AppSettings.usedRegulator]->length)
+	strcpy(str,regulatorTypes[AppSettings.usedRegulator].c_str());
+}
+SettingsElement RegulatorType(&RegulatorType_name, &GetRegulatorTypeStr, &scr_adjRegulatorType);
+
 
 const String SensorMode_name = "Temp Mode";
 MenuItem_Adjust_TempMode_Screen scr_adjSensorMode(&SensorMode_name);
@@ -150,6 +171,72 @@ void GetAggKdStr(char* str)
 }
 SettingsElement AggKd(&AggKd_name, &GetAggKdStr, &scr_adjAggKd);
 
+const String OuterRange_name = "OuterRange";
+MenuItem_Adjust_d_Screen scr_adjOuterRange(&OuterRange_name);
+void SetOuterRange(double value)
+{
+	AppSettings.OuterRange = value;
+}
+double GetOuterRange(void)
+{
+	return AppSettings.OuterRange;
+}
+void GetOuterRangeStr(char* str)
+{
+	dtostrf(AppSettings.OuterRange, 2, 3, str);
+}
+SettingsElement OuterRange(&OuterRange_name, &GetOuterRangeStr, &scr_adjOuterRange);
+
+const String InnerRange_name = "InnerRange";
+MenuItem_Adjust_d_Screen scr_adjInnerRange(&InnerRange_name);
+void SetInnerRange(double value)
+{
+	AppSettings.InnerRange = value;
+}
+double GetInnerRange(void)
+{
+	return AppSettings.InnerRange;
+}
+void GetInnerRangeStr(char* str)
+{
+	dtostrf(AppSettings.InnerRange, 2, 3, str);
+}
+SettingsElement InnerRange(&InnerRange_name, &GetInnerRangeStr, &scr_adjInnerRange);
+
+const String Factor_name = "Factor";
+MenuItem_Adjust_d_Screen scr_adjFactor(&Factor_name);
+void SetFactor(double value)
+{
+	AppSettings.Factor = value;
+}
+double GetFactor(void)
+{
+	return AppSettings.Factor;
+}
+void GetFactorStr(char* str)
+{
+	dtostrf(AppSettings.Factor, 2, 3, str);
+}
+SettingsElement Factor(&Factor_name, &GetFactorStr, &scr_adjFactor);
+
+const String Offset_name = "Offset";
+MenuItem_Adjust_d_Screen scr_adjOffset(&Offset_name);
+void SetOffset(double value)
+{
+	AppSettings.Offset = value;
+}
+double GetOffset(void)
+{
+	return AppSettings.Offset;
+}
+void GetOffsetStr(char* str)
+{
+	dtostrf(AppSettings.Offset, 2, 3, str);
+}
+SettingsElement Offset(&Offset_name, &GetOffsetStr, &scr_adjOffset);
+
+
+
 const String PidTime_name = "Reg.Period";
 MenuItem_Adjust_ts_Screen scr_adjPidTime(&PidTime_name);
 void SetPidTime(int32_t value)
@@ -187,7 +274,7 @@ const String wifisettings_name = "Wifi Settings";
 SettingsElement WifiSettings(&wifisettings_name, &scr_WifiSettings);
 
 
-SettingsElement* settingsElements[] = {&ConsKp, &ConsKi, &ConsKd, &AggKp, &AggKi, &AggKd, &PidTime, &SensorMode, &Restore, &Save, &WifiSettings, &Exit};
+SettingsElement* settingsElements[] = {&ConsKp, &ConsKi, &ConsKd, &AggKp, &AggKi, &AggKd, &PidTime, &SensorMode, &RegulatorType, &OuterRange, &InnerRange, &Offset, &Factor, &Restore, &Save, &WifiSettings, &Exit};
 
 void SettingsMenuConfig(Adafruit_SSD1306 *display)
 {
@@ -199,6 +286,12 @@ void SettingsMenuConfig(Adafruit_SSD1306 *display)
 	scr_adjAggKi.Config(display, &scr_settings, &GetAggKi, &SetAggKi);
 	scr_adjAggKd.Config(display, &scr_settings, &GetAggKd, &SetAggKd);
 	scr_adjPidTime.Config(display, &scr_settings, &GetPidTime, &SetPidTime,1000,100000);
+	scr_adjOuterRange.Config(display, &scr_settings, &GetOuterRange, &SetOuterRange);
+	scr_adjInnerRange.Config(display, &scr_settings, &GetInnerRange, &SetInnerRange);
+	scr_adjOffset.Config(display, &scr_settings, &GetOffset, &SetOffset);
+	scr_adjFactor.Config(display, &scr_settings, &GetFactor, &SetFactor);
+	scr_adjRegulatorType.Config(display,&scr_settings,regulatorTypes,3,&GetRegulatorType, &SetRegulatorType);
+
 	scr_settings.Config(display, settingsElements, (sizeof(settingsElements)/sizeof(*settingsElements)));
 }
 

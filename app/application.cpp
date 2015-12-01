@@ -9,6 +9,7 @@
 #include <MenuItem_SettingsScreen.h>
 #include <MenuItem_Adjust_d_Screen.h>
 #include <MenuItem_Adjust_ts_Screen.h>
+#include <MenuItem_Adjust_Enum_Screen.h>
 #include <SlowPWM.h>
 #include <temperature.h>
 #include <WifiMenu.h>
@@ -16,15 +17,14 @@
 #include <AdaptiveRegulator.h>
 //#define DONOTUSEPID	1
 
-enum RegulatorTypes { REG_PID, REG_ADAPTIVE };
-RegulatorTypes usedRegulator = REG_ADAPTIVE;
-
 /* PID regulator */
 //Define Variables we'll be connecting to
 float Input, Output;
 ApplicationSettingsStorage AppSettings;
 
 #ifndef DONOTUSEPID
+enum PidModeTypes { USEING_ONOFF, USEING_PID};
+PidModeTypes PidMode;
 //Specify the links and initial tuning parameters
 PID myPID(&Input, &Output, &AppSettings.Setpoint, AppSettings.consKp, AppSettings.consKi, AppSettings.consKd, DIRECT);
 #endif
@@ -162,7 +162,8 @@ void CalculateRegulator()
 {
 	float gap;
 	Input = tempSensor.get();
-	switch (usedRegulator)
+	boolean runPidCalculation = false;
+	switch (AppSettings.usedRegulator)
 	{
 	case REG_ADAPTIVE:
 		if (Input > 20.0)
@@ -170,21 +171,72 @@ void CalculateRegulator()
 			myReg.Compute();
 		}
 		break;
-	case REG_PID:
 #ifndef DONOTUSEPID
+	case REG_PID_ONLY:
+		runPidCalculation=true;
+		break;
+	case REG_PID:
 		gap = abs(AppSettings.Setpoint-Input); //distance away from setpoint
-		if (gap < AppSettings.pidConservativeLimit)
+		if (PidMode == USEING_PID)
 		{
-			//we're close to setpoint, use conservative tuning parameters
-			myPID.SetTunings(AppSettings.consKp, AppSettings.consKi, AppSettings.consKd);
+			if (AppSettings.OuterRange != 0.0f)
+			{
+				if (gap > AppSettings.OuterRange)
+				{
+					PidMode = USEING_ONOFF;
+					myPID.SetMode(MANUAL);
+					if (Input > AppSettings.Setpoint)
+					{
+						Output = 0;
+					} else
+					{
+						Output = 255;
+					}
+				} else
+				{
+
+					runPidCalculation = true;
+				}
+			} else
+			{
+				runPidCalculation = true;
+			}
 		}
 		else
 		{
-			//we're far from setpoint, use aggressive tuning parameters
-			myPID.SetTunings(AppSettings.aggKp, AppSettings.aggKi, AppSettings.aggKd);
+			if (gap < AppSettings.InnerRange)
+			{
+				PidMode = USEING_PID;
+				Output = AppSettings.Setpoint*AppSettings.Factor + AppSettings.Offset;
+				myPID.SetMode(AUTOMATIC);
+			} else
+			{
+				if (Input > AppSettings.Setpoint)
+				{
+					Output = 0;
+				} else
+				{
+					Output = 255;
+				}
+			}
 		}
 
-		myPID.Compute();
+		if (runPidCalculation)
+		{
+			gap = abs(AppSettings.Setpoint-Input); //distance away from setpoint
+			if (gap < AppSettings.pidConservativeLimit)
+			{
+				//we're close to setpoint, use conservative tuning parameters
+				myPID.SetTunings(AppSettings.consKp, AppSettings.consKi, AppSettings.consKd);
+			}
+			else
+			{
+				//we're far from setpoint, use aggressive tuning parameters
+				myPID.SetTunings(AppSettings.aggKp, AppSettings.aggKi, AppSettings.aggKd);
+			}
+
+			myPID.Compute();
+		}
 		outputPwm.SetDuty( Output/255);
 #endif
 		break;
@@ -371,6 +423,7 @@ void onApiSensors(HttpRequest &request, HttpResponse &response)
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
 	json["status"] = (bool)true;
+	json["millis"] = millis();
 	json["heap"] = system_get_free_heap_size();
 	JsonObject& sensors = json.createNestedObject("sensors");
 	sensors["temperature"] = tempSensor.get();
@@ -384,18 +437,20 @@ void onApiSensors(HttpRequest &request, HttpResponse &response)
 		//sensors[names[i]] = tempSensor.get(i);
 	}
 	JsonObject& regulator = json.createNestedObject("reg");
-	switch (usedRegulator)
+	switch (AppSettings.usedRegulator)
 		{
 		case REG_ADAPTIVE:
 			regulator["Type"] = "Adaptive";
 			regulator["Setpoint"] = AppSettings.Setpoint;
 			regulator["State"] = myReg.opState;
-			if (myReg.isHeatOn)
+			regulator["PTerm"] = myReg.opState*1000;
+			if (digitalRead(PIN_RELAY) == 1)
 				regulator["output"] = 255.0;
 			else
 				regulator["output"] = 0;
 			break;
 		case REG_PID:
+		case REG_PID_ONLY:
 #ifndef DONOTUSEPID
 			regulator["Type"] = "PID";
 			regulator["Setpoint"] = AppSettings.Setpoint;
@@ -462,6 +517,14 @@ void init()
 		AppSettings.pidConservativeLimit = 5.0;
 		AppSettings.ssid = WIFI_SSID;
 		AppSettings.password = WIFI_PASS;
+
+		AppSettings.OuterRange = 2.0;
+		AppSettings.InnerRange = 1.0;
+		AppSettings.Factor = (31.25*255)/10000;
+		AppSettings.Offset = (400.0*255)/10000;
+
+		AppSettings.usedRegulator = REG_ADAPTIVE;
+
 		AppSettings.save();
 	}
 	Serial.print("Loading Appsettings...");
@@ -479,15 +542,16 @@ void init()
 
 //	pinMode(PIN_LED_WS2812, OUTPUT);
 #ifndef DONOTUSEPID
-if (usedRegulator == REG_PID)
+if (AppSettings.usedRegulator == REG_PID)
 {
+	PidMode = USEING_ONOFF;
 	outputPwm.SetDuty(0);
 	outputPwm.Start();
 //turn the PID on
 	myPID.SetMode(AUTOMATIC);
 }
 #endif
-if (usedRegulator == REG_ADAPTIVE)
+if (AppSettings.usedRegulator == REG_ADAPTIVE)
 {
 	;
 }
